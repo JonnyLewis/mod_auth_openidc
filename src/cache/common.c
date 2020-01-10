@@ -210,19 +210,25 @@ apr_byte_t oidc_cache_mutex_destroy(server_rec *s, oidc_cache_mutex_t *m) {
 		apr_global_mutex_lock(m->mutex);
 		(*m->sema)--;
 		//oidc_sdebug(s, "semaphore: %d (m=%pp,s=%pp)", *m->sema, m->mutex, s);
-		apr_global_mutex_unlock(m->mutex);
 
 		if ((m->shm != NULL) && (*m->sema == 0)) {
-
-			rv = apr_global_mutex_destroy(m->mutex);
-			oidc_sdebug(s, "apr_global_mutex_destroy returned :%d", rv);
-			m->mutex = NULL;
 
 			rv = apr_shm_destroy(m->shm);
 			oidc_sdebug(s, "apr_shm_destroy for semaphore returned: %d", rv);
 			m->shm = NULL;
 
+			apr_global_mutex_unlock(m->mutex);
+
+			rv = apr_global_mutex_destroy(m->mutex);
+			oidc_sdebug(s, "apr_global_mutex_destroy returned :%d", rv);
+			m->mutex = NULL;
+
 			rv = APR_SUCCESS;
+
+		} else {
+
+			apr_global_mutex_unlock(m->mutex);
+
 		}
 	}
 
